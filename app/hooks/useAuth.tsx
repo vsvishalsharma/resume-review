@@ -75,8 +75,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        // Use the current origin for redirect in client environment
-        emailRedirectTo: `${window.location.origin}/`
+        // Use the environment variable or fallback to current origin
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/`
       }
     });
 
