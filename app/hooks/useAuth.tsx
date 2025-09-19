@@ -9,7 +9,7 @@ interface Profile {
   user_id: string;
   email: string;
   full_name: string | null;
-  is_admin: boolean;
+  is_admin: boolean | null;
 }
 
 interface AuthContextType {
@@ -17,7 +17,7 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  signInWithEmail: (email: string) => Promise<{ error: any }>;
+  signInWithEmail: (email: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 

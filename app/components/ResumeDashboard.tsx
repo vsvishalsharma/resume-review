@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FileText, Download, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ interface Resume {
   file_name: string;
   file_path: string;
   file_size: number;
-  status: 'pending' | 'approved' | 'needs_revision' | 'rejected';
+  status: 'pending' | 'approved' | 'needs_revision' | 'rejected' | null;
   score: number | null;
   admin_notes: string | null;
   created_at: string;
@@ -25,23 +25,19 @@ const ResumeDashboard: React.FC = () => {
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      fetchResumes();
-    }
-  }, [user]);
-
-  const fetchResumes = async () => {
+  const fetchResumes = useCallback(async () => {
+    if (!user?.id) return;
+    
     try {
       const { data, error } = await supabase
         .from('resumes')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       setResumes(data || []);
-    } catch (error: any) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to fetch resumes',
@@ -50,7 +46,13 @@ const ResumeDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id, toast]);
+
+  useEffect(() => {
+    if (user) {
+      fetchResumes();
+    }
+  }, [user, fetchResumes]);
 
   const downloadResume = async (filePath: string, fileName: string) => {
     try {
@@ -68,10 +70,10 @@ const ResumeDashboard: React.FC = () => {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Download failed',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Unknown error',
         variant: 'destructive',
       });
     }
@@ -145,7 +147,7 @@ const ResumeDashboard: React.FC = () => {
                     <Badge variant={getStatusVariant(resume.status)}>
                       <span className="flex items-center space-x-1">
                         {getStatusIcon(resume.status)}
-                        <span className="capitalize">{resume.status.replace('_', ' ')}</span>
+                        <span className="capitalize">{resume.status?.replace('_', ' ') || 'Pending'}</span>
                       </span>
                     </Badge>
                   </div>

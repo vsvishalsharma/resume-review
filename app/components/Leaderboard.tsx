@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Trophy, Medal, Award } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,11 +19,7 @@ const Leaderboard: React.FC = () => {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchLeaderboard();
-  }, []);
-
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = useCallback(async () => {
     try {
       // First get resumes with scores
       const { data: resumeData, error: resumeError } = await supabase
@@ -60,7 +56,7 @@ const Leaderboard: React.FC = () => {
       } else {
         setEntries([]);
       }
-    } catch (error: any) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to fetch leaderboard',
@@ -69,7 +65,11 @@ const Leaderboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, [fetchLeaderboard]);
 
   const getRankIcon = (rank: number) => {
     switch (rank) {

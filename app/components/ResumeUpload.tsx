@@ -73,10 +73,10 @@ const ResumeUpload: React.FC<ResumeUploadProps> = ({ onUploadComplete }) => {
 
       setPreviewFile(null);
       onUploadComplete();
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Upload failed',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Unknown error',
         variant: 'destructive',
       });
     } finally {

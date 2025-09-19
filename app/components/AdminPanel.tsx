@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { FileText, Download, Eye, Save } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Download, Eye, Save } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ interface ResumeWithProfile {
   file_name: string;
   file_path: string;
   file_size: number;
-  status: 'pending' | 'approved' | 'needs_revision' | 'rejected';
+  status: 'pending' | 'approved' | 'needs_revision' | 'rejected' | null;
   score: number | null;
   admin_notes: string | null;
   created_at: string;
@@ -34,13 +34,7 @@ const AdminPanel: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (profile?.is_admin) {
-      fetchAllResumes();
-    }
-  }, [profile]);
-
-  const fetchAllResumes = async () => {
+  const fetchAllResumes = useCallback(async () => {
     try {
       // First get all resumes
       const { data: resumeData, error: resumeError } = await supabase
@@ -73,7 +67,7 @@ const AdminPanel: React.FC = () => {
       } else {
         setResumes([]);
       }
-    } catch (error: any) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to fetch resumes',
@@ -82,7 +76,13 @@ const AdminPanel: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    if (profile?.is_admin) {
+      fetchAllResumes();
+    }
+  }, [profile, fetchAllResumes]);
 
   const updateResume = async (
     resumeId: string,
@@ -111,7 +111,7 @@ const AdminPanel: React.FC = () => {
       });
 
       fetchAllResumes();
-    } catch (error: any) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to update resume',
@@ -138,10 +138,10 @@ const AdminPanel: React.FC = () => {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Download failed',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Unknown error',
         variant: 'destructive',
       });
     }
@@ -156,7 +156,7 @@ const AdminPanel: React.FC = () => {
       if (error) throw error;
 
       window.open(data.signedUrl, '_blank');
-    } catch (error: any) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to view resume',
@@ -171,7 +171,7 @@ const AdminPanel: React.FC = () => {
         <CardContent className="p-6 text-center">
           <p className="text-lg font-medium">Access Denied</p>
           <p className="text-muted-foreground">
-            You don't have admin privileges
+            You don&apos;t have admin privileges
           </p>
         </CardContent>
       </Card>
@@ -231,7 +231,9 @@ const ResumeReviewCard: React.FC<ResumeReviewCardProps> = ({
     if (scoreValue && (scoreValue < 0 || scoreValue > 100)) {
       return;
     }
-    onUpdate(resume.id, status, scoreValue, notes);
+    if (status) {
+      onUpdate(resume.id, status, scoreValue, notes);
+    }
   };
 
   return (
@@ -273,7 +275,7 @@ const ResumeReviewCard: React.FC<ResumeReviewCardProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
-            <Select value={status} onValueChange={(value: 'pending' | 'approved' | 'needs_revision' | 'rejected') => setStatus(value)}>
+            <Select value={status || 'pending'} onValueChange={(value: 'pending' | 'approved' | 'needs_revision' | 'rejected') => setStatus(value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
